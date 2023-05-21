@@ -84,41 +84,41 @@ void myExecvp(char **argv) {
                 argv[i] = nullptr;
                 break;
             }
-        }
+            }
 
-            if (appendMode) {
+        if (appendMode) {
         
                 //open system call used, file opened in write only + append mode
                 //created if does not exist
-                int fileDescriptor = open(outFile, O_WRONLY | O_CREAT | O_APPEND, 0644); 
-                if (fileDescriptor == -1) {
-                    perror("open");
+            int fileDescriptor = open(outFile, O_WRONLY | O_CREAT | O_APPEND, 0644); 
+            if (fileDescriptor == -1) {
+                perror("open");
+                exit(1);
+            }
+
+            // Read user input until termination string is entered
+            while (true) {
+                std::string input;
+                std::getline(std::cin, input);
+                if (std::cin.eof()) {
+                    break;
+                }
+                input += '\n';
+                
+                //input.c_str() passes pointer to character array of user input
+                ssize_t bytesWritten = write(fileDescriptor, input.c_str(), input.length());
+                if (bytesWritten == -1) {
+                    perror("write");
+                    close(fileDescriptor);
                     exit(1);
                 }
-
-                // Read user input until termination string is entered
-                while (true) {
-                    std::string input;
-                    std::getline(std::cin, input);
-                    if (std::cin.eof()) {
-                        break;
-                    }
-                    input += '\n';
-                    
-                    //input.c_str() passes pointer to character array of user input
-                    ssize_t bytesWritten = write(fileDescriptor, input.c_str(), input.length());
-                    if (bytesWritten == -1) {
-                        perror("write");
-                        close(fileDescriptor);
-                        exit(1);
-                    }
-                }
+            }
 
             //close system call to close the file
                 close(fileDescriptor);
                 exit(0);
-    }
-        } else if (strcmp(argv[0], "grep") == 0) {
+            }
+         else if (strcmp(argv[0], "grep") == 0) {
             // Call the Grep function for the "grep" command
             if (argv[1] != nullptr && argv[2] != nullptr) {
                 Grep(argv[2], argv[1]);
@@ -126,51 +126,53 @@ void myExecvp(char **argv) {
                 cout << "Usage: grep <word> <file>" << endl;
             }
             exit(0);
+        }
         else {
             // Check for pipe operator '|'
             for (int i = 0; argv[i] != nullptr; i++) {
-            if (strcmp(argv[i], "|") == 0) {
-                argv[i] = nullptr;
+                if (strcmp(argv[i], "|") == 0) {
+                    argv[i] = nullptr;
 
-                // Create pipe
-                if (pipe(pipefd) == -1) {
-                    perror("pipe");
-                    exit(1);
-                }
+                    // Create pipe
+                    if (pipe(pipefd) == -1) {
+                        perror("pipe");
+                        exit(1);
+                    }
 
-                pid_t childpid;
-                childpid = fork();
-                if (childpid == 0) {
-                    // Child process
+                    pid_t childpid;
+                    childpid = fork();
+                    if (childpid == 0) {
+                        // Child process
 
-                    // Close read end of the pipe
-                    close(pipefd[0]);
+                        // Close read end of the pipe
+                        close(pipefd[0]);
 
-                    // Duplicate the write end of the pipe to stdout
-                    dup2(pipefd[1], STDOUT_FILENO);
-                    close(pipefd[1]);
+                        // Duplicate the write end of the pipe to stdout
+                        dup2(pipefd[1], STDOUT_FILENO);
+                        close(pipefd[1]);
 
-                    execvp(argv[0], argv);
-                    perror("execvp");
-                    exit(1);
-                } 
-                else if (childpid > 0) {
-                    // Parent process
+                        execvp(argv[0], argv);
+                        perror("execvp");
+                        exit(1);
+                    } 
+                    else if (childpid > 0) {
+                        // Parent process
 
-                    // Close write end of the pipe
-                    close(pipefd[1]);
+                        // Close write end of the pipe
+                        close(pipefd[1]);
 
-                    // Duplicate the read end of the pipe to stdin
-                    dup2(pipefd[0], STDIN_FILENO);
-                    close(pipefd[0]);
+                        // Duplicate the read end of the pipe to stdin
+                        dup2(pipefd[0], STDIN_FILENO);
+                        close(pipefd[0]);
 
-                    execvp(argv[i + 1], &argv[i + 1]);
-                    perror("execvp");
-                    exit(1);
-                } 
-                else {
-                    perror("fork");
-                    exit(1);
+                        execvp(argv[i + 1], &argv[i + 1]);
+                        perror("execvp");
+                        exit(1);
+                    } 
+                    else {
+                        perror("fork");
+                        exit(1);
+                    }
                 }
             }
         }
@@ -180,8 +182,8 @@ void myExecvp(char **argv) {
             perror("execvp");
 
             exit(1);
-        }
-    } else if (pid < 0) {
+    }
+    else if (pid < 0) {
         cout << "something went wrong!" << endl;
     }   
     else { // parent process
